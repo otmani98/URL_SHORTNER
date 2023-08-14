@@ -203,7 +203,12 @@ exports.isLoggedIn = catchAsync(async (req, res, next) => {
   }
 
   //Verification token
-  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  let decoded;
+  try {
+    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  } catch {
+    return next();
+  }
   // console.log(decoded);
 
   //check if user still exists
