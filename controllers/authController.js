@@ -1,6 +1,6 @@
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -133,9 +133,6 @@ exports.login = catchAsync(async (req, res, next) => {
       ),
     );
 
-  if (!user.active)
-    return next(new AppError('This account has been deleted', 401));
-
   //if everything is ok, send token to client
   createSendToken(user, 200, req, res);
 });
@@ -246,6 +243,9 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     return next(new AppError('there is no user with this email', 404));
   }
 
+  if (!user.active)
+    return next(new AppError('This account has been deleted', 401));
+
   //Generate random reset token
   const resetToken = user.createPasswordResetToken();
   await user.save({ validateBeforeSave: false });
@@ -299,7 +299,13 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   await user.save();
 
-  //update changedpasswordAt property for user
+  if (!user.confirmed)
+    return next(
+      new AppError(
+        'You did not confirm your account yet, please check your email box',
+        401,
+      ),
+    );
 
   //Log the user in
   createSendToken(user, 200, req, res);
